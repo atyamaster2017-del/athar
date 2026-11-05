@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="أثر">
+<title>أثر Athar AI Vid</title>
+<style>
+:root{--bg:#0d0f14;--card:#161a22;--ink:#f2efe8;--mute:#9a9588;--line:#262b36;--acc:#e8b04a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",system-ui,sans-serif;line-height:1.6}
+.w{max-width:720px;margin:auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(60px + env(safe-area-inset-bottom))}
+.logo{text-align:center;font-size:52px;font-weight:800;color:var(--acc)}.logo small{display:block;font-size:12px;letter-spacing:4px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:14px}
+label{display:block;font-weight:700;font-size:14px;margin:10px 0 6px}
+input,textarea,select{width:100%;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:16px}
+textarea{min-height:90px;direction:ltr;text-align:left}#idea{direction:rtl;text-align:right}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--acc);color:#1a1405}
+button.s{background:transparent;color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.5}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.sc{border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px;background:var(--card)}
+.sc h3{margin:0 0 8px;font-size:16px}.st{font-size:13px;color:var(--mute);margin-top:8px}.er{color:#f87171}
+video{width:100%;max-height:420px;border-radius:10px;margin-top:10px;background:#000}
+a.dl{display:inline-block;margin-top:8px;color:var(--acc);font-size:14px}
+details summary{cursor:pointer;font-weight:700}.note{font-size:12px;color:var(--mute)}
+</style></head><body><div class="w">
+<div class="logo">أثر<small>ATHAR AI VID</small></div>
+
+<div class="card"><details id="set"><summary>⚙️ الإعدادات والمفاتيح</summary>
+<label>مفتاح Gemini (لـ Veo والسيناريو)</label><input id="gk" type="password" autocomplete="off" placeholder="AIza...">
+<label>مفتاح fal.ai (لـ Kling وWan)</label><input id="fk" type="password" autocomplete="off" placeholder="key-id:secret">
+<label>موديل Veo</label><input id="vm" dir="ltr" placeholder="veo-3.1-generate-preview">
+<label>موديل fal</label><input id="fm" dir="ltr" placeholder="fal-ai/kling-video/v2.1/master/text-to-video">
+<div class="bar"><button id="sv">حفظ</button><span id="cs" class="note" style="align-self:center"></span></div>
+<p class="note">المفاتيح تُحفظ داخل متصفح جهازك فقط وتُرسل مباشرة إلى Google أو fal.ai. لا تفتح التطبيق على جهاز غيرك.</p></details></div>
+
+<div class="card"><label>فكرة الفيديو</label><textarea id="idea" placeholder="مثال: رحلة قهوة عراقية من الفجر حتى المساء في سوق قديم ببغداد"></textarea>
+<div class="row">
+<div><label>المزوّد</label><select id="prov"><option value="veo">Google Veo</option><option value="fal">fal.ai</option></select></div>
+<div><label>الأبعاد</label><select id="ratio"><option>9:16</option><option>16:9</option></select></div>
+<div><label>الأسلوب</label><select id="style"><option>cinematic, anamorphic, film grain</option><option>documentary realism, natural light</option><option>stylized 3D animation</option><option>sci-fi, neon, volumetric light</option><option>luxury commercial, macro, slow motion</option></select></div>
+<div><label>المشاهد</label><select id="n"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div></div>
+<div class="bar"><button id="sb">✨ اكتب السيناريو</button><button class="s" id="add">+ مشهد يدوي</button></div><div id="msg" class="st"></div></div>
+
+<div id="sc"></div>
+<div class="bar" id="all" hidden><button id="gall">🎬 ولّد كل المشاهد</button></div>
+<p class="note">لحفظ الفيديو: اضغط مطولاً عليه أو استخدم رابط الحفظ. لدمج المقاطع استخدم CapCut. التوليد يستهلك رصيد حسابك عند المزوّد، ويستغرق دقائق، فخلّي الصفحة مفتوحة.</p>
+</div>
+<script>
+const $=i=>document.getElementById(i);let S=[];
+const GEM="https://generativelanguage.googleapis.com/v1beta";
+const cfg=()=>{try{return JSON.parse(localStorage.getItem("athar")||"{}")}catch(e){return{}}};
+const setCfg=c=>{try{localStorage.setItem("athar",JSON.stringify(c))}catch(e){alert("تعذر الحفظ. عطّل التصفح الخاص.")}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function j(url,opt){let r;try{r=await fetch(url,opt)}catch(e){throw new Error("تعذر الاتصال بالخدمة (قد يكون الحظر من المتصفح أو الشبكة)")}
+const t=await r.text();if(!r.ok)throw new Error("HTTP "+r.status+": "+t.slice(0,250));return t?JSON.parse(t):{}}
+function showCfg(){const c=cfg();$("vm").value=c.vm||"";$("fm").value=c.fm||"";$("cs").textContent=`Gemini: ${c.gk?"✓":"✗"}  fal: ${c.fk?"✓":"✗"}`;if(!c.gk&&!c.fk)$("set").open=true}
+$("sv").onclick=()=>{const c=cfg();if($("gk").value.trim())c.gk=$("gk").value.trim();if($("fk").value.trim())c.fk=$("fk").value.trim();c.vm=$("vm").value.trim();c.fm=$("fm").value.trim();setCfg(c);$("gk").value=$("fk").value="";showCfg()};
+
+async function storyboard(idea,n,style,ratio){const c=cfg();if(!c.gk)throw new Error("أضف مفتاح Gemini أو اكتب المشاهد يدوياً");
+const q=`You are a film director and prompt engineer for AI video models. Idea: "${idea}". Style: ${style}. Aspect ratio ${ratio}. Write exactly ${n} coherent scenes (hook first, strong ending). Keep character and setting descriptions identical across scenes. Return ONLY a JSON array: [{"title":"Arabic scene title","prompt":"detailed English video prompt: subject, action, setting, lighting, camera movement, mood, style; no on-screen text"}]`;
+const r=await j(`${GEM}/models/gemini-2.5-flash:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":c.gk},body:JSON.stringify({contents:[{parts:[{text:q}]}],generationConfig:{responseMimeType:"application/json"}})});
+return JSON.parse(r.candidates[0].content.parts[0].text.replace(/^```json|```$/g,"").trim())}
+
+async function veo(prompt,ratio,upd){const c=cfg();if(!c.gk)throw new Error("أضف مفتاح Gemini");const H={"Content-Type":"application/json","x-goog-api-key":c.gk};
+let op=await j(`${GEM}/models/${c.vm||"veo-3.1-generate-preview"}:predictLongRunning`,{method:"POST",headers:H,body:JSON.stringify({instances:[{prompt}],parameters:{aspectRatio:ratio}})});
+for(let i=0;i<120&&!op.done;i++){await sleep(8000);upd("جارٍ التوليد... "+(i+1)*8+" ث");op=await j(`${GEM}/${op.name}`,{headers:H})}
+if(!op.done)throw new Error("انتهت المهلة");if(op.error)throw new Error(op.error.message||"خطأ من Veo");
+const gv=op.response.generateVideoResponse;if(!gv.generatedSamples)throw new Error("رُفض المحتوى: "+JSON.stringify(gv.raiMediaFilteredReasons||""));
+const uri=gv.generatedSamples[0].video.uri;upd("تحميل الفيديو...");
+let r;try{r=await fetch(uri,{headers:{"x-goog-api-key":c.gk}})}catch(e){try{r=await fetch(uri+(uri.includes("?")?"&":"?")+"key="+encodeURIComponent(c.gk))}catch(e2){throw new Error("تم التوليد لكن المتصفح منع تحميل الفيديو (CORS). استخدم نسخة Termux أو fal.ai")}}
+if(!r.ok)throw new Error("فشل تحميل الفيديو HTTP "+r.status);return URL.createObjectURL(await r.blob())}
+
+async function fal(prompt,ratio,upd){const c=cfg();if(!c.fk)throw new Error("أضف مفتاح fal.ai");const H={"Content-Type":"application/json","Authorization":"Key "+c.fk};
+const sub=await j("https://queue.fal.run/"+(c.fm||"fal-ai/kling-video/v2.1/master/text-to-video"),{method:"POST",headers:H,body:JSON.stringify({prompt,aspect_ratio:ratio})});
+for(let i=0;i<180;i++){await sleep(5000);upd("جارٍ التوليد... "+(i+1)*5+" ث");const st=await j(sub.status_url,{headers:H});
+if(st.status==="COMPLETED")break;if(st.status==="FAILED"||st.status==="ERROR")throw new Error("فشل التوليد عند fal.ai")}
+return (await j(sub.response_url,{headers:H})).video.url}
+
+function draw(){const box=$("sc");box.textContent="";$("all").hidden=!S.length;
+S.forEach((s,i)=>{const d=document.createElement("div");d.className="sc";
+const h=document.createElement("h3");h.textContent=(i+1)+". "+(s.title||"مشهد");
+const t=document.createElement("textarea");t.value=s.prompt;t.oninput=()=>s.prompt=t.value;
+const b=document.createElement("button");b.textContent="ولّد هذا المشهد";b.disabled=!!s.busy;b.onclick=()=>gen(i);
+const x=document.createElement("button");x.className="s";x.textContent="حذف";x.onclick=()=>{S.splice(i,1);draw()};
+const bar=document.createElement("div");bar.className="bar";bar.append(b,x);
+const st=document.createElement("div");st.className="st"+(s.error?" er":"");st.textContent=s.error||s.status||"";st.id="st"+i;
+d.append(h,t,bar,st);
+if(s.url){const v=document.createElement("video");v.controls=true;v.playsInline=true;v.src=s.url;d.append(v);
+const a=document.createElement("a");a.className="dl";a.href=s.url;a.download="athar-scene-"+(i+1)+".mp4";a.target="_blank";a.textContent="⬇ حفظ الفيديو";d.append(a)}
+box.append(d)})}
+
+$("sb").onclick=async()=>{const idea=$("idea").value.trim();if(!idea)return;$("msg").className="st";$("msg").textContent="جارٍ كتابة السيناريو...";$("sb").disabled=true;
+try{S=(await storyboard(idea,$("n").value,$("style").value,$("ratio").value)).map(x=>({title:x.title,prompt:x.prompt}));$("msg").textContent="";draw()}
+catch(e){$("msg").textContent=e.message;$("msg").className="st er"}$("sb").disabled=false};
+$("add").onclick=()=>{S.push({title:"مشهد جديد",prompt:$("idea").value});draw()};
+async function gen(i){const s=S[i];s.busy=true;s.error="";s.url="";s.status="يبدأ التوليد...";draw();
+const upd=m=>{const e=$("st"+i);if(e)e.textContent=m};
+try{s.url=await ($("prov").value==="veo"?veo:fal)(s.prompt,$("ratio").value,upd);s.status="تم ✓"}
+catch(e){s.error=e.message;s.status=""}s.busy=false;draw()}
+$("gall").onclick=()=>S.forEach((_,i)=>gen(i));
+showCfg();
+</script></body></html>
